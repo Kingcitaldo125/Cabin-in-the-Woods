@@ -1,0 +1,24 @@
+attribute vec3 position;
+attribute vec2 texcoord;
+attribute vec3 normal;
+attribute vec3 tangent;
+
+uniform mat4 worldMatrix;
+uniform mat4 viewProjMatrix;
+
+
+varying vec2 oTexcoord;
+varying vec3 oWorldPos;
+varying vec3 oNormal;
+varying vec3 oTangent;
+
+
+void main()
+{
+	vec4 p = vec4(position,1.0) * worldMatrix;
+	oNormal = normal;
+	oTexcoord = texcoord;
+	oWorldPos = p.xyz;
+	gl_Position = p * viewProjMatrix;
+	oTangent = tangent;
+}

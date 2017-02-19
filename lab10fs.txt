@@ -1,0 +1,65 @@
+precision mediump float;
+
+uniform vec4 eyePos;
+uniform float mode;
+uniform samplerCube basetexture;
+
+varying vec2 tex;
+varying vec3 oNormal;
+varying vec4 oWorldPos;
+
+vec4 mtl = vec4(0.0,0.0,0.0,0.0);
+
+#define float PI = 3.14159265358979323;
+
+vec4 pack(vec4 v,vec4 mn, vec4 mx)
+{
+    return (v-mn)/(mx-mn);
+}
+
+vec4 pack(vec4 v)
+{
+    return pack(v,vec4(-1.0),vec4(1.0));
+}
+
+void main()
+{
+	vec3 N = normalize(oNormal);
+	vec3 V = oWorldPos.xyz - eyePos.xyz;
+	V = normalize(V);
+	vec4 texc = textureCube(basetexture,V);
+	
+	//float altp = v_texcoord.s * PI/2.0;
+    //float diffsunp = v_texcoord.t*PI;
+    
+    //vec3 perez = 
+     //   Z * ( 
+      //      ( (1.0+H*exp(G/cos(altp))) * (1.0+S*exp(W*diffsunp)+B*pow(cos(diffsunp),2.0)) )/
+       //     ( (1.0+H*exp(G))*(1.0+S*exp(W*altsun)+B*pow(cos(altsun),2.0)) ) 
+        //    );
+		
+	if(mode == 0.0)
+	{
+		gl_FragColor = pack(oWorldPos);
+	}
+	else if(mode == 1.0)
+	{
+		gl_FragColor = pack(vec4(N,mtl.a));
+	}
+	else if(mode == 2.0)
+	{
+		gl_FragColor = pack(texc);
+	}
+	else if(mode == 3.0)
+	{
+		//gl_FragColor = texc;
+		gl_FragColor = pack(mtl.aaaa,vec4(1.0),vec4(128.0));
+	}
+	
+	/*
+	vec3 V = v_pw.xyz-eyePos.xyz;
+	V = normalize(V);
+	vec4 c = textureCube(basetexture,V);
+	gl_FragColor = c;
+	*/
+}

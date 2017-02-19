@@ -1,0 +1,90 @@
+precision highp float;
+
+uniform sampler2D basetexture;
+
+vec4 specmtl = vec4(0.0,0.0,0.0,1.0);
+vec4 diffusemtl = vec4(0.0,0.0,0.0,1.0);
+
+//float magic_constant = 15.0;
+
+uniform vec4 eyePos;
+
+varying vec2 v_texcoord;
+varying vec4 v_worldPos;
+varying vec4 v_normal;
+
+uniform vec4 lightPos;
+uniform vec4 lightColor;
+uniform mat4 light_viewMatrix;
+uniform mat4 light_projMatrix;
+uniform vec3 light_hitheryon;
+uniform float scale_factor;
+uniform float magic_constant;
+uniform sampler2D shadowbuffer;
+
+void main()
+{
+    vec3 N = normalize(v_normal.xyz);
+        
+    vec3 V = eyePos.xyz - v_worldPos.xyz;
+    V = normalize(V);
+    
+    vec3 diffuse;
+    vec3 specular;
+    
+    vec3 L = lightPos.xyz-v_worldPos.xyz;
+    L = normalize(L);
+	vec3 R = reflect(-L.xyz,N.xyz);
+    
+    //the receiver
+    vec4 tmp = v_worldPos * light_viewMatrix;
+    float z1 = tmp.z;
+    z1 = -z1;
+    z1 = (z1-light_hitheryon[0]) / light_hitheryon[2];
+    z1 *= scale_factor;
+    
+    tmp = tmp * light_projMatrix;
+    tmp.xy /= tmp.w;
+    tmp.xy = 0.5*(tmp.xy + vec2(1.0));
+    
+    //the occluder
+    float z22 = texture2D(shadowbuffer,tmp.xy).r;
+	vec2 z2 = texture2D(shadowbuffer,tmp.xy).rg;
+	
+    z22 = abs(z22);
+	
+	/*
+	float mean = z2[0];
+	float deviation = z2[1];
+	//float variance = z2[1]-z2[0]*z2[0];
+	float variance = deviation - (mean*mean);
+	float delta = z1-mean;
+	delta = max(0.0,delta);
+	float litpercent = variance / (variance+(delta*delta));
+	*/
+    
+    float c = magic_constant;
+    float litpct;
+    litpct = exp(c*(z22-z1));
+    litpct = clamp(litpct,0.0,1.0);
+
+    float dp = clamp( dot(L,N) , 0.0, 1.0);
+	
+    diffuse = litpct * dp * lightColor.rgb;
+    
+    float sp = dot(V,R);
+    sp = clamp(sp,0.0,1.0);
+    sp = pow(sp,specmtl.a);
+    sp = sp * sign(dp);    //no spec if light can't see surface
+	
+    specular = litpct * sp * lightColor.rgb;
+    
+    vec4 texc = texture2D(basetexture,v_texcoord);
+    vec4 basecolor;
+	
+	basecolor.rgb = diffuse.rgb * texc.rgb;
+	basecolor.rgb += specular.rgb;
+    basecolor.a = diffusemtl.a * texc.a;
+	
+    gl_FragColor = basecolor;
+}

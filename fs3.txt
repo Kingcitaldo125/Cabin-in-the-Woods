@@ -1,0 +1,134 @@
+precision mediump float;
+
+uniform sampler2D normalmap;
+uniform sampler2D basetexture;
+
+uniform sampler2D position_texture;
+uniform sampler2D normal_texture;
+uniform sampler2D color_texture;
+uniform sampler2D specular_texture;
+
+uniform samplerCube skyTexture;
+
+vec4 specmtl = vec4(0.0,0.0,0.0,1.0);
+vec4 diffusemtl = vec4(0.0,0.0,0.0,1.0);
+
+#define MAX_LIGHTS 1;
+
+uniform vec4 eyePos;
+uniform vec4 lightPos;
+uniform vec4 lightColor;
+uniform mat4 worldMatrix;
+uniform mat4 light_viewMatrix;
+uniform vec3 light_hitheryon;
+uniform mat4 light_projMatrix;
+uniform float scale_factor;
+uniform float magic_constant;
+uniform sampler2D shadowbuffer;
+
+varying vec2 vtexcoords;
+varying vec3 oNormal;
+varying vec3 oTangent;
+varying vec3 oWorldPos;
+varying vec4 v_worldPos;
+
+vec4 unpack(vec4 v, vec4 mn, vec4 mx)
+{
+    return mn + v * (mx-mn);
+}
+
+vec4 unpack(vec4 v)
+{
+    return unpack( v, vec4(-1.0), vec4(1.0));
+}
+
+void main()
+{
+    vec4 worldPos = texture2D(position_texture,vtexcoords);
+    vec4 normal = texture2D(normal_texture,vtexcoords);
+    vec4 color = texture2D(color_texture,vtexcoords);
+    vec4 specular = texture2D(specular_texture,vtexcoords);
+    
+    worldPos = unpack(worldPos);
+    vec3 N = unpack(normal).xyz;
+    color = unpack(color);
+	specular = unpack(specular,vec4(1.0),vec4(128.0));
+	
+    // Old Lighting Computations
+	
+    float shininess = specular.r;
+	vec3 Lone = normalize(lightPos.xyz - worldPos.xyz);
+	vec3 Rone = reflect(-Lone,N);
+	float dp = clamp(dot(Lone.xyz,N.xyz),0.0,1.0);
+	
+	vec3 diffuse;
+    //vec3 specular;
+	
+	vec3 speck = vec3(0.0,0.0,0.0);
+	
+	vec3 V = (eyePos - worldPos).xyz;
+	V = normalize(V);
+	
+	//the receiver
+    vec4 tmp = worldPos * light_viewMatrix;
+    float z1 = tmp.z;
+    z1 = -z1;
+    z1 = (z1-light_hitheryon[0]) / light_hitheryon[2];
+    z1 *= scale_factor;
+    
+    tmp = tmp * light_projMatrix;
+    tmp.xy /= tmp.w;
+    tmp.xy = 0.5*(tmp.xy + vec2(1.0));
+    
+    //the occluder
+    float z22 = texture2D(shadowbuffer,tmp.xy).r;
+	z22 = abs(z22);
+    
+    float c = magic_constant;
+    float litpct;
+    litpct = exp(c*(z22-z1));
+    litpct = clamp(litpct,0.0,1.0);
+	
+	float dpp = clamp( dot(Lone,N) , 0.0, 1.0);
+	
+    diffuse = litpct * dpp * lightColor.rgb;
+    
+    float sp = dot(V,Rone);
+    sp = clamp(sp,0.0,1.0);
+    sp = pow(sp,specmtl.a);
+    sp = sp * sign(dp);    //no spec if light can't see surface
+	
+	float sdp = clamp(sign(dp) * dot(V,Rone),0.0,1.0);
+    //speck = sdp*lightColor.rgb;
+	speck = litpct * sp * lightColor.rgb;
+	
+	vec4 tc = texture2D(basetexture,vtexcoords);
+	
+	//gl_FragColor.rgb = dp + color.rgb * tc.rgb;
+	gl_FragColor.rgb = color.rgb;//diffuse * tc.rgb;
+	gl_FragColor.rgb += speck.rgb;
+    gl_FragColor.a = 1.0;
+	return;
+	
+	// New Lighting Computations
+	/*
+	vec3 nn = normalize(oNormal.xyz);
+	vec3 Ltwo = normalize(lightPos.xyz - oWorldPos.xyz);
+	vec3 Rtwo = reflect(-Ltwo.xyz,N.xyz);
+	
+	vec4 ambient = vec4(0.0,0.0,0.0,0.0);
+	float dd = clamp(dot(Ltwo,N),0.0,1.0);
+	vec3 diffuse = dd*lightColor.rgb;
+	vec3 speck = vec3(0.0,0.0,0.0);
+	
+	vec3 vv = normalize(eyePos.xyz - oWorldPos.xyz);
+	float sp = pow(clamp(dot(V,Rtwo),0.0,1.0),32.0);
+	speck = litpct * sp * lightColor.rgb;
+	
+	vec4 tc = texture2D(basetexture,texc);
+	
+	gl_FragColor.rgb = ambient.rgb + diffuse.rgb * tc.rgb;
+	gl_FragColor.rgb += speck.rgb;
+	gl_FragColor.a = 1.0;
+	*/
+}

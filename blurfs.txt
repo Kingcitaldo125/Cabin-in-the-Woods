@@ -1,0 +1,55 @@
+// Blur FS
+precision mediump float;
+
+uniform vec2 deltas;
+uniform sampler2D tex;
+uniform vec4 tex_size;
+uniform float scale_factor;
+
+varying vec2 v_texcoord;
+
+#include "gaussblur5.txt"
+
+void main()
+{
+    gl_FragColor = gaussblur5(tex,tex_size.zw,v_texcoord,deltas);
+    return;
+    
+		vec4 c = vec4(0,0,0,0);
+    vec2 t = v_texcoord.st;
+    c += texture2D(tex,t-deltas.xy*tex_size.zw);
+    c += texture2D(tex,t);
+    c += texture2D(tex,t+deltas.xy*tex_size.zw);
+    c *= 0.3333;
+    gl_FragColor = c;
+    //return;
+    
+    c=vec4(0.0,0.0,0.0,0.0);
+    //for(float i=-10.0;i<11.0;++i){c += 0.0001 * texture2D(tex, t + i * deltas.xy * tex_size.zw);}
+	
+		c += 0.00133164238418 * texture2D(tex , t + -10.0 * deltas.xy * tex_size.zw);
+		c += 0.00313118978625 * texture2D(tex , t + -9.0 * deltas.xy * tex_size.zw);
+		c += 0.00672890923663 * texture2D(tex , t + -8.0 * deltas.xy * tex_size.zw);
+		c += 0.013215799633 * texture2D(tex , t + -7.0 * deltas.xy * tex_size.zw);
+		c += 0.0237222412093 * texture2D(tex , t + -6.0 * deltas.xy * tex_size.zw);
+		c += 0.0389162949304 * texture2D(tex , t + -5.0 * deltas.xy * tex_size.zw);
+		c += 0.0583472982821 * texture2D(tex , t + -4.0 * deltas.xy * tex_size.zw);
+		c += 0.0799509287402 * texture2D(tex , t + -3.0 * deltas.xy * tex_size.zw);
+		c += 0.100124364242 * texture2D(tex , t + -2.0 * deltas.xy * tex_size.zw);
+		c += 0.114596017885 * texture2D(tex , t + -1.0 * deltas.xy * tex_size.zw);
+		c += 0.119870627342 * texture2D(tex , t + 0.0 * deltas.xy * tex_size.zw);
+		c += 0.114596017885 * texture2D(tex , t + 1.0 * deltas.xy * tex_size.zw);
+		c += 0.100124364242 * texture2D(tex , t + 2.0 * deltas.xy * tex_size.zw);
+		c += 0.0799509287402 * texture2D(tex , t + 3.0 * deltas.xy * tex_size.zw);
+		c += 0.0583472982821 * texture2D(tex , t + 4.0 * deltas.xy * tex_size.zw);
+		c += 0.0389162949304 * texture2D(tex , t + 5.0 * deltas.xy * tex_size.zw);
+		c += 0.0237222412093 * texture2D(tex , t + 6.0 * deltas.xy * tex_size.zw);
+		c += 0.013215799633 * texture2D(tex , t + 7.0 * deltas.xy * tex_size.zw);
+		c += 0.00672890923663 * texture2D(tex , t + 8.0 * deltas.xy * tex_size.zw);
+		c += 0.00313118978625 * texture2D(tex , t + 9.0 * deltas.xy * tex_size.zw);
+		c += 0.00133164238418 * texture2D(tex , t + 10.0 * deltas.xy * tex_size.zw);
+	
+    gl_FragColor = c;
+    
+    gl_FragColor.rgb *= scale_factor;
+}

@@ -1,0 +1,30 @@
+// Special Fragment Shader
+precision highp float;
+
+varying float v_viewPosz;
+
+//hither, yon, yon-hither
+uniform vec3 hitheryon;
+uniform float scale_factor;
+
+void main()
+{
+	//Exponential shadow maps
+	/*
+    float z = v_viewPosz;
+	z = -z;
+    z = (z - hitheryon[0]) / hitheryon[2];
+	z *= scale_factor;
+	gl_FragColor = vec4(z,0.0,0.0,1.0); 
+	*/
+	
+	// Variance shadow maps
+	
+	float z = v_viewPosz;
+	z = -z;
+	z = (z - hitheryon[0]) / hitheryon[2];
+	z *= scale_factor;
+	gl_FragColor=vec4(z,z*z,0.0,1.0);
+	//gl_FragColor=vec4(z,z,z,1.0);
+	
+}

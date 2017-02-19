@@ -1,0 +1,48 @@
+precision mediump float;
+
+uniform sampler2D texture;
+uniform float mode;
+
+varying vec2 v_texcoord;
+varying vec4 oWorldPos;
+varying vec4 oNormal;
+
+vec4 mtl = vec4(0.0,0.0,0.0,1.0);
+
+vec4 tempcolor = vec4(1.0,1.0,1.0,1.0);
+
+vec4 pack(vec4 v,vec4 mn, vec4 mx)
+{
+    return (v-mn)/(mx-mn);
+}
+
+vec4 pack(vec4 v)
+{
+    return pack(v,vec4(-1.0),vec4(1.0));
+}
+
+void main()
+{ 
+	vec3 N = normalize(oNormal.xyz);
+    vec4 texc = texture2D(texture,v_texcoord);
+	
+    if(texc.a == 0.0){discard;}
+	
+	if(mode == 0.0)
+	{
+		gl_FragColor = pack(oWorldPos);
+	}
+	else if(mode == 1.0)
+	{
+		gl_FragColor = pack(vec4(N,mtl.a));
+	}
+	else if(mode == 2.0)
+	{
+		gl_FragColor = pack(texc);
+	}
+	else if(mode == 3.0)
+	{
+		gl_FragColor = pack(mtl.aaaa,vec4(1.0),vec4(128.0));
+	}
+    //gl_FragColor = texc;
+}

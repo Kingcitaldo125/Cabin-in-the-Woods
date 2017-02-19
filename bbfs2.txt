@@ -1,0 +1,71 @@
+//bbfs2
+precision mediump float;
+//precision mediump float;
+
+vec2 winsize = vec2(1.0/512.0,1.0/512.0);
+
+uniform sampler2D basetexture;
+uniform sampler2D tex;
+
+uniform sampler2D position_texture;
+uniform sampler2D normal_texture;
+uniform sampler2D color_texture;
+uniform sampler2D specular_texture;
+
+uniform vec4 eyePos;
+uniform vec4 lightPos;
+uniform vec4 lightColor;
+uniform mat4 worldMatrix;
+
+varying vec2 texc;
+varying vec3 oNormal;
+varying vec3 oWorldPos;
+
+vec4 unpack(vec4 v, vec4 mn, vec4 mx)
+{
+    return mn + v * (mx-mn);
+}
+
+vec4 unpack(vec4 v)
+{
+	return 2.0*(v-vec4(0.5));
+    //return unpack( v, vec4(-1.0), vec4(1.0));
+}
+
+void main()
+{
+	vec4 worldPos = texture2D(position_texture,texc);
+    vec4 normal = texture2D(normal_texture,texc);
+    vec4 color = texture2D(color_texture,texc);
+    vec4 specular = texture2D(specular_texture,texc);
+    
+    worldPos = unpack(worldPos);
+    vec3 N = unpack(normal).xyz;
+    color = unpack(color);
+	specular = unpack(specular,vec4(1.0),vec4(128.0));
+	
+	// Lighting Comp
+	float shininess = specular.r;
+	vec3 Lone = normalize(lightPos.xyz - worldPos.xyz);
+	vec3 Rone = reflect(-Lone,N);
+	float dp = clamp(dot(Lone.xyz,N.xyz),0.0,1.0);
+	
+	vec3 speck = vec3(0.0,0.0,0.0);
+	
+	vec3 V = (eyePos - worldPos).xyz;
+	V = normalize(V);
+	float sdp = clamp(sign(dp) * dot(V,Rone),0.0,1.0);
+    speck = sdp*lightColor.rgb;//pow(sdp,32.0);
+	
+	gl_FragColor.rgb = dp * color.rgb + vec3(speck);
+    gl_FragColor.a = 1.0;
+	return;
+	
+	
+	vec4 tc = texture2D(basetexture,texc);
+	vec4 X = texture2D(tex,texc);
+	
+	//gl_FragColor = X;
+	//gl_FragColor.rgb = color.rgb;//*tc.xyz;
+	//gl_FragColor.a = 1.0;
+}
